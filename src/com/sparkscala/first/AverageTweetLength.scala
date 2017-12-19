@@ -12,11 +12,12 @@ import java.util.concurrent.atomic._
 /** Uses thread-safe counters to keep track of the average length of
  *  Tweets in a stream.
  */
+
 object AverageTweetLength {
-  
+  var maxSoFar = 0
   /** Our main function where the action happens */
   def main(args: Array[String]) {
-
+    
     // Configure Twitter credentials using twitter.txt
     setupTwitter()
     
@@ -39,8 +40,11 @@ object AverageTweetLength {
     // As we could have multiple processes adding into these running totals
     // at the same time, we'll just Java's AtomicLong class to make sure
     // these counters are thread-safe.
-    var totalTweets = new AtomicLong(0)
-    var totalChars = new AtomicLong(0)
+    //var totalTweets = new AtomicLong(0)
+    //var totalChars = new AtomicLong(0)
+    
+    
+    
     
     // In Spark 1.6+, you  might also look into the mapWithState function, which allows
     // you to safely and efficiently keep track of global state with key/value pairs.
@@ -50,20 +54,31 @@ object AverageTweetLength {
       
       var count = rdd.count()
       if (count > 0) {
-        totalTweets.getAndAdd(count)
+        //totalTweets.getAndAdd(count)
+        //totalChars.getAndAdd(rdd.reduce((x,y) => x + y))
         
-        totalChars.getAndAdd(rdd.reduce((x,y) => x + y))
+        //println("Total tweets: " + totalTweets.get() + 
+        //    " Total characters: " + totalChars.get() + 
+        //    " Average: " + totalChars.get() / totalTweets.get())
+      
+        if(maxSoFar < rdd.max) {
+          maxSoFar = rdd.max
+        }
+      
         
-        println("Total tweets: " + totalTweets.get() + 
-            " Total characters: " + totalChars.get() + 
-            " Average: " + totalChars.get() / totalTweets.get())
+        println(s"$maxSoFar")      
+      
       }
     })
     
+    
     // Set a checkpoint directory, and kick it all off
     // I could watch this all day!
-    ssc.checkpoint("F:/Scala/Checkpoints")
+    //ssc.checkpoint("C:/checkpoint/")
+   
     ssc.start()
+    //println(s"Middle Max len $len")
     ssc.awaitTermination()
+    //println(s"after Max len $len")
   }  
 }
